@@ -138,8 +138,64 @@ function mainMenu() {
             );
           });
       } else if (answers.action === "Add an Employee") {
-        console.log("You chose to add an employee");
-        ("INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (answers.first_name, answers.last_name, answers.role_id, answers.manager_id);");
+        inquirer
+          .prompt([
+            {
+              type: "input",
+              name: "first_name",
+              message: "What is the first name of the Employee?",
+            },
+            {
+                type: "input",
+                name: "last_name",
+                message: "What is the last name of the Employee?",
+              },
+            {
+              type: "list",
+              name: "title",
+              message: "What is the Employee's title?",
+              choices: function () {
+                return new Promise(function (resolve, reject) {
+                  db.query(
+                    "SELECT title FROM role",
+                    function (err, results) {
+                      if (err) {
+                        reject(err);
+                      } else {
+                        const roleTitles = results.map((row) => row.title);
+                        resolve(roleTitles);
+                      }
+                    }
+                  );
+                });
+              },
+            },
+          ])
+          .then((answers) => {
+            db.query(
+              "SELECT id FROM role WHERE title = ?",
+              [answers.title],
+              function (err, results) {
+                if (err) {
+                  console.log(err);
+                } else {
+                  const role_id = results[0].id;
+                  db.query(
+                    `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, null)`,
+                    [answers.first_name, answers.last_name, role_id],
+                    function (err, results) {
+                      if (err) {
+                        console.log(err);
+                      } else {
+                        console.log(`${answers.first_name} ${answers.last_name} has been added to employee's`);
+                        mainMenu();
+                      }
+                    }
+                  );
+                }
+              }
+            );
+          });
       } else if (answers.action === "Update an Employee Role") {
         console.log("You chose to update an employee role");
         ("UPDATE employee SET role_id = answers.role_id WHERE id = answers.id;");
